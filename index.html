@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simple Drag & Drop Practice</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, Arial;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        align-items: center;
+        padding: 30px;
+      }
+      h1 {
+        margin: 0 0 6px 0;
+        font-size: 20px;
+      }
+      .board {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+      }
+      .column {
+        width: 220px;
+        min-height: 180px;
+        padding: 12px;
+        border: 2px dashed #bbb;
+        border-radius: 8px;
+        background: #fafafa;
+      }
+      .column.drop-active {
+        border-color: #4a90e2;
+        background: #eef6ff;
+      }
+      .item {
+        padding: 10px 12px;
+        margin: 8px 0;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #ddd;
+        cursor: grab;
+      }
+      .item:active {
+        cursor: grabbing;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #fff;
+        cursor: pointer;
+      }
+      .hint {
+        color: #666;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simple Drag & Drop - Practice</h1>
+    <div class="hint">
+      Drag the cards between columns. Try reordering or returning them.
+    </div>
+
+    <div class="board">
+      <div class="column" id="source">
+        <div class="item" draggable="true" id="item-1">🍎 Item 1</div>
+        <div class="item" draggable="true" id="item-2">🍌 Item 2</div>
+        <div class="item" draggable="true" id="item-3">🍇 Item 3</div>
+      </div>
+
+      <div class="column" id="target">
+        <div style="color: #999; font-size: 13px">Drop here</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="reset">Reset</button>
+      <button id="shuffle">Shuffle Source</button>
+    </div>
+
+    <script>
+      // Simple HTML5 Drag & Drop example
+      const draggableItems = document.querySelectorAll(".item");
+      const columns = document.querySelectorAll(".column");
+
+      draggableItems.forEach((item) => {
+        item.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", e.target.id);
+          // used for styling while dragging
+          requestAnimationFrame(() => e.target.classList.add("dragging"));
+        });
+
+        item.addEventListener("dragend", (e) => {
+          e.target.classList.remove("dragging");
+        });
+      });
+
+      columns.forEach((col) => {
+        col.addEventListener("dragover", (e) => {
+          e.preventDefault(); // allow drop
+        });
+
+        col.addEventListener("dragenter", (e) => {
+          e.preventDefault();
+          col.classList.add("drop-active");
+        });
+
+        col.addEventListener("dragleave", (e) => {
+          // make sure we leave the column
+          if (!col.contains(e.relatedTarget))
+            col.classList.remove("drop-active");
+        });
+
+        col.addEventListener("drop", (e) => {
+          e.preventDefault();
+          col.classList.remove("drop-active");
+          const id = e.dataTransfer.getData("text/plain");
+          const dragged = document.getElementById(id);
+          if (!dragged) return;
+
+          // If dropping into the same column, append (simple behavior)
+          col.appendChild(dragged);
+        });
+      });
+
+      // Extra practice helpers
+      const source = document.getElementById("source");
+      const resetBtn = document.getElementById("reset");
+      const shuffleBtn = document.getElementById("shuffle");
+
+      const original = Array.from(source.children).map((n) => n.id);
+
+      resetBtn.addEventListener("click", () => {
+        // move all items back to source in original order
+        original.forEach((id) => {
+          const node = document.getElementById(id);
+          if (node) source.appendChild(node);
+        });
+      });
+
+      shuffleBtn.addEventListener("click", () => {
+        const items = Array.from(source.querySelectorAll(".item"));
+        for (let i = items.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          source.insertBefore(items[j], items[i]);
+        }
+      });
+
+      // Touch fallback: allow tap-to-pick on mobile (basic)
+      let touchPicked = null;
+      document.addEventListener("touchstart", (ev) => {
+        const t = ev.target.closest(".item");
+        if (!t) return;
+        touchPicked = t;
+        t.classList.add("dragging");
+      });
+      document.addEventListener("touchend", (ev) => {
+        if (!touchPicked) return;
+        // find drop column under touch
+        const touch = ev.changedTouches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const col = el ? el.closest(".column") : null;
+        if (col) col.appendChild(touchPicked);
+        touchPicked.classList.remove("dragging");
+        touchPicked = null;
+      });
+    </script>
+  </body>
+</html>
